@@ -1,0 +1,85 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: pets
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: cats-app
+  namespace: pets
+  labels:
+    app: cats
+spec:
+  containers:
+    - name: cats-app
+      image: hashicorp/http-echo
+      args:
+        - "-text=meow"
+      resources:
+        limits:
+          cpu: 50m
+          memory: 32Mi
+        requests:
+          cpu: 50m
+          memory: 32Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+        seccompProfile:
+          type: RuntimeDefault
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: cats-service
+  namespace: pets
+spec:
+  selector:
+    app: cats
+  ports:
+    - port: 5678
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: dogs-app
+  namespace: pets
+  labels:
+    app: dogs
+spec:
+  containers:
+    - name: dogs-app
+      image: hashicorp/http-echo
+      args:
+        - "-text=woof"
+      resources:
+        limits:
+          cpu: 50m
+          memory: 32Mi
+        requests:
+          cpu: 50m
+          memory: 32Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+        seccompProfile:
+          type: RuntimeDefault
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: dogs-service
+  namespace: pets
+spec:
+  selector:
+    app: dogs
+  ports:
+    - port: 5678
