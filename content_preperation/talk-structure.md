@@ -25,12 +25,10 @@ Zitat von kubernetes.io:
 > "The Kubernetes project has no plans to remove Ingress from Kubernetes."
 
 Kernprobleme:
-- Die Ingress-Spec reicht nicht aus, um übliche Anwendungsfälle abzubilden
-- Jeder Ingress-Controller bringt eigene Annotationen mit -- keine Portabilität
-- Kein Support für Non-HTTP-Traffic (MQTT, gRPC nativ, TCP/UDP, ...)
-- Kein geeignetes Berechtigungsmodell für Multi-Team-Cluster
+- Die Ingress-Spec reicht nicht aus, um übliche HTTP Anwendungsfälle abzubilden -> Nutzung von Controller-spezifischen Annotationen
+- Kein Support für Non-HTTP-Traffic (TCP/UDP, ...)
 
-### Folie 3: Der Trigger -- Ingress-NGINX Retirement
+### Folie 3: Der Trigger -- Ingress-NGINX Retirement - rauslasse
 
 **November 2025: Ingress-NGINX wird retired**
 (Quelle: https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/)
@@ -39,7 +37,7 @@ Kernprobleme:
 - Jetzt ist der richtige Zeitpunkt, um zu migrieren
 - Die Gateway API ist der offizielle Nachfolger
 
-### Folie 4: Timeline der Gateway API
+### Folie 4: Timeline der Gateway API - rauslasse
 
 | Zeitpunkt | Ereignis |
 |---|---|
@@ -50,7 +48,10 @@ Kernprobleme:
 | November 2025 | Ingress-NGINX retired -- Migrationsdruck steigt |
 | 2025/2026 | **v1.5** -- TLSRoute GA, ListenerSet GA, BackendTLSPolicy in v1, CORS, External Auth |
 
-**Jetzt:** Die API ist ausgereift, Implementierungen sind vorhanden, und es gibt allen Grund zu migrieren.
+**Jetzt:** Die API ist ausgereift
+Implementierungen für 1.5 sind noch rar.
+1.4 ist verbreitet. cilium braucht noch einen hack für 1.5
+
 
 ---
 
@@ -65,11 +66,6 @@ Die Gateway API definiert drei Personas mit klaren Verantwortlichkeiten:
 | **Isabell** | Infrastruktur-Providerin | Stellt die Plattform bereit (z.B. Cloud-LB, Gateway-Controller). Verwaltet mehrere Cluster. |
 | **Caroline** | Cluster-Operatorin | Betreibt einen einzelnen Cluster. Definiert Entry Points (Gateways), TLS, Policies. |
 | **Christian** | Anwendungsentwickler | Baut Geschäftsanwendungen. Will seine Endpunkte exponieren, ohne sich um Infrastruktur zu kümmern. |
-
-**Warum ist das wichtig?**
-- Bei Ingress macht "der User" alles: Infrastruktur, TLS, Routing
-- Bei der Gateway API gibt es eine klare Trennung der Verantwortlichkeiten
-- Das passt zu realen Organisationsstrukturen mit mehreren Teams
 
 ### Folie 6: Das Ressource-Modell
 
@@ -106,104 +102,43 @@ GatewayClass --> Gateway (Listener) --> HTTPRoute --> Service
 ---
 
 ## Teil 3: Demo Schritt 1 -- HTTP Service exponieren (~7 Minuten)
+Gateway, route
+### Gatewayclass ist die implementierung, die dafür sorgt, dass das gateway tut.
+das macht Isabell, die die cluster verwaltet. 
+dafür reicht ein clusteradmin nicht aus, weil es eben dinge drum herum braucht
+Das legt fest, wie sich ein Gateway verhalten soll.
 
-### Folie 8: Das Szenario
+In meinem fall ist das ein Service
+* Type ClusterIP (eigentlich nur intern)
+* der pro listener einen port aufmacht.
+* bei mir überhaupt nur erreichbar ist, weil cilium diese services ans hostnetwork exponiert
+* in der cloud oft typ loadbalancer
+* nodeport möglich.
+* eine gatwayclass könnte noch ganz andere sachen tun, um einen port zu öffnen. z.b. ein SDN programmieren
 
-Ziel: Christians Anwendung `my-app` soll unter `app.example.com` von außen erreichbar sein.
 
-Wer macht was?
+### 
+gateway stellt Caroline bereit. Diejenige, die auch Namespaces für die feature teams anlegt.
+es ist also klar, wie der port nach außen aufgeht. im cluster geht es jetzt darum, wer ihn benutzen darf.
 
-### Folie 9: Isabells Aufgabe -- GatewayClass
+gründe für mehrere gateways: mehrere hostnames, einschränken auf namespaces.
+meistens will man nur eins.
 
-Isabell stellt den Gateway-Controller im Cluster bereit und erstellt die GatewayClass:
 
-```yaml
-apiVersion: gateway.networking.k8s.io/v1
-kind: GatewayClass
-metadata:
-  name: production
-spec:
-  controllerName: example.com/gateway-controller
+* rules und filters an HTTPRoute zeigen
+* 
+
+
+```
+kubectl -n website port-forward svc/apple-service 5678:5678
+http localhost:5678
 ```
 
-- Cluster-scoped -- gilt für den gesamten Cluster
-- Oft wird die GatewayClass vom Controller selbst mitgebracht
-- Vergleichbar mit IngressClass bei Ingress
-
-### Folie 10: Carolines Aufgabe -- Gateway
-
-Caroline erstellt ein Gateway im `infra` Namespace:
-
-```yaml
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: shared-gateway
-  namespace: infra
-spec:
-  gatewayClassName: production
-  listeners:
-  - name: http
-    port: 80
-    protocol: HTTP
-    hostname: "*.example.com"
-    allowedRoutes:
-      namespaces:
-        from: Selector
-        selector:
-          matchLabels:
-            gateway-access: "true"
 ```
+kubectl get gatewayclass
+kubectl describe gatewayclass cilium
 
-**Erklärung:**
-- Caroline definiert einen Listener auf Port 80 für HTTP
-- `hostname: "*.example.com"` -- nur Subdomains von example.com sind erlaubt
-- `allowedRoutes` mit `Selector` -- nur Namespaces mit dem Label `gateway-access: "true"` dürfen Routes attachen
-- Caroline hat volle Kontrolle darüber, wer das Gateway nutzen darf
-
-### Folie 11: Christians Aufgabe -- HTTPRoute
-
-Christian erstellt in seinem Namespace eine HTTPRoute:
-
-```yaml
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: my-app-route
-  namespace: my-app-ns  # Hat Label gateway-access: "true"
-spec:
-  parentRefs:
-  - name: shared-gateway
-    namespace: infra
-    sectionName: http
-  hostnames:
-  - app.example.com
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
-    - name: my-app-service
-      port: 8080
 ```
-
-**Erklärung:**
-- `parentRefs` referenziert Carolines Gateway im `infra` Namespace
-- `sectionName: http` bindet explizit an den HTTP-Listener
-- `hostnames` muss zum Hostname-Pattern des Listeners passen
-- Christian braucht keine Annotationen -- alles ist in der Spec
-
-### Folie 12: Was wir gewonnen haben (vs. Ingress)
-
-| Aspekt | Ingress | Gateway API |
-|---|---|---|
-| Verantwortlichkeiten | Alles in einem YAML | Klar getrennt nach Persona |
-| Wer darf was? | RBAC auf Ingress-Ebene | Gateway kontrolliert Route-Attachment |
-| Multi-Team | Annotationen für Sharing | Natives Cross-Namespace-Routing |
-| Features | Annotationen | Alles in der Spec |
-
----
 
 ## Teil 4: Demo Schritt 2 -- TLS mit cert-manager (~5 Minuten)
 
