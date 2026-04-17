@@ -1,30 +1,29 @@
-## Kubernetes Gateway API -- Moderner North/South Traffic
+## Kubernetes Gateway API 
+## Moderner North/South Traffic
 
-
----
-## Kubernetes Gateway API -- Moderner North/South Traffic
-
-whoami
-
+```
+➜  ~ whoami
 Christian, Software Architekt, Telekom MMS
+```
+
 
 ---
-## Motivation - Das Problem mit Ingress
-
-**Die Ingress API ist eingefroren.**
+## Motivation
 
 > "The Kubernetes project recommends using Gateway instead of Ingress. The Ingress API has been frozen."
+> 
 > "The Kubernetes project has no plans to remove Ingress from Kubernetes."
 
-Kernprobleme:
-- Die Ingress-Spec reicht nicht aus, um übliche HTTP Anwendungsfälle abzubilden -> Nutzung von Controller-spezifischen Annotationen
+### Probleme
+- Die Ingress-Spec reicht nicht aus, um übliche HTTP Anwendungsfälle abzubilden
+- Nutzung von Controller-spezifischen Annotationen als Mitigation
 - Kein Support für Non-HTTP-Traffic (TCP/UDP, ...)
 
-----
+---
 
-### Rollenorientiertes API-Design -- Personas
+### Rollenorientiertes API-Design
 
-Die Gateway API definiert drei Personas mit klaren Verantwortlichkeiten:
+Die Gateway API definiert drei Personas mit Verantwortlichkeiten
 
 | Persona | Rolle | Verantwortung |
 |---|---|---|
@@ -32,7 +31,8 @@ Die Gateway API definiert drei Personas mit klaren Verantwortlichkeiten:
 | **Caroline** | Cluster-Operatorin | Betreibt einen einzelnen Cluster. Definiert Entry Points (Gateways), TLS, Policies. |
 | **Christian** | Anwendungsentwickler | Baut Geschäftsanwendungen. Will seine Endpunkte exponieren, ohne sich um Infrastruktur zu kümmern. |
 
-### Das Ressource-Modell
+---
+### Ressourcen
 
 ```
 Isabell          Caroline               Christian
@@ -40,20 +40,33 @@ Isabell          Caroline               Christian
 GatewayClass --> Gateway (Listener) --> HTTPRoute --> Service
                                     --> GRPCRoute
                                     --> TLSRoute
-                                    --> TCPRoute (exp.)
+                                    --> TCPRoute
 ```
 
-**Drei Schichten:**
-1. **GatewayClass** (Cluster-scoped): Definiert den Gateway-Controller (z.B. Envoy, Nginx, Traefik, Istio, ...)
-2. **Gateway**: Definiert Entry Points (Listener mit Port, Protokoll, Hostname, TLS)
-3. **Routes**: Definieren Routing-Regeln, die an Gateway-Listener gebunden werden
+### Drei Schichten
+* **GatewayClass** (Cluster-scoped): Definiert den Gateway-Controller (z.B. Envoy, Nginx, Traefik, Istio, ...)
+* **Gateway**: Definiert Entry Points (Listener mit Port, Protokoll, Hostname, TLS)
+* **Routes**: Definieren Routing-Regeln, die an Gateway-Listener gebunden werden
 
-**Schlüsselkonzepte:**
-- Routes *attachen* sich an Gateways über `parentRefs`
-- Cross-Namespace Routing ist möglich (mit `ReferenceGrant`)
+---
+
+### Ressourcen
+
+```
+Isabell          Caroline               Christian
+   |                 |                      |
+GatewayClass --> Gateway (Listener) --> HTTPRoute --> Service
+                                    --> GRPCRoute
+                                    --> TLSRoute
+                                    --> TCPRoute
+```
+
+### Schlüsselkonzepte
+- Routes *attachen* sich an Gateways
 - Mehrere Routes können sich einen Gateway teilen (Multi-Tenancy)
 - Ein Route kann an mehrere Gateways attachen
 
+---
 
 ### Route-Typen im Überblick (v1.5)
 
@@ -61,20 +74,64 @@ GatewayClass --> Gateway (Listener) --> HTTPRoute --> Service
 |---|---|---|---|
 | **HTTPRoute** | HTTP/HTTPS | L7 | GA seit v0.5 |
 | **GRPCRoute** | gRPC (HTTP/2) | L7 | GA seit v1.1 |
-| **TLSRoute** | TLS (SNI-basiert) | L4-7 | **GA seit v1.5** |
+| **TLSRoute** | TLS (SNI-basiert) | L4-7 | GA seit v1.5 |
 | TCPRoute | TCP | L4 | Experimental |
 | UDPRoute | UDP | L4 | Experimental |
 
+---
 
-## Demo 1 -- HTTP Service exponieren
+## Demo
+### HTTP Service exponieren
 
-### workload
+---
+## Demo
+### HTTP Service exponieren
+#### workload
 
 ```
 kubectl -n pets get services
 kubectl -n pets port-forward svc/cats-service 5678:5678
 http localhost:5678
 ```
+
+#### GatewayClass
+```
+kubectl get gatewayclass
+kubectl describe gatewayclass cilium
+
+kubectl -n infra get gateway
+kubectl -n infra get services 
+```
+
+#### Route
+
+```
+http 192.168.178.101:80/cat
+http 192.168.178.101:80/cat Host:pets.devday.cscheer.eu
+http pets.devday.cscheer.eu/cat 
+http POST pets.devday.cscheer.eu/dog
+http pets.devday.cscheer.eu/any
+watch -n 1 http pets.devday.cscheer.eu/any
+```
+
+---
+
+## Demo
+### TLS mit cert-manager
+
+---
+
+
+#### workload
+
+```
+kubectl -n infra get Certificate
+```
+
+---
+
+
+
 
 Gateway, route
 ### GatewayClass
@@ -91,14 +148,6 @@ In meinem fall ist das ein Service
 * nodeport möglich.
 * eine gatwayclass könnte noch ganz andere sachen tun, um einen port zu öffnen. z.b. ein SDN programmieren
 
-```
-kubectl get gatewayclass
-kubectl describe gatewayclass cilium
-
-kubectl -n infra get gateway
-kubectl -n infra get services 
-```
-
 ### 
 gateway stellt Caroline bereit. Diejenige, die auch Namespaces für die feature teams anlegt.
 es ist also klar, wie der port nach außen aufgeht. im cluster geht es jetzt darum, wer ihn benutzen darf.
@@ -107,12 +156,6 @@ gründe für mehrere gateways: mehrere hostnames, einschränken auf namespaces.
 meistens will man nur eins.
 
 * rules und filters an HTTPRoute zeigen
-```
-http 192.168.178.101:80/cat
-http 192.168.178.101:80/cat Host:pets.devday.cscheer.eu
-http POST 192.168.178.101:80/dog Host:pets.devday.cscheer.eu
-http 192.168.178.101:80/any Host:pets.devday.cscheer.eu
-```
 
 
 ## Demo Schritt 2 -- TLS mit cert-manager
