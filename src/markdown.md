@@ -25,23 +25,16 @@ Christian, Software Architekt, Telekom MMS
 
 Die Gateway API definiert drei Personas mit Verantwortlichkeiten
 
-| Persona | Rolle | Verantwortung |
-|---|---|---|
-| **Isabell** | Infrastruktur-Providerin | Stellt die Plattform bereit (z.B. Cloud-LB, Gateway-Controller). Verwaltet mehrere Cluster. |
-| **Caroline** | Cluster-Operatorin | Betreibt einen einzelnen Cluster. Definiert Entry Points (Gateways), TLS, Policies. |
+| Persona | Rolle | Verantwortung                                                                                      |
+|---|---|----------------------------------------------------------------------------------------------------|
+| **Isabell** | Infrastruktur-Providerin | Stellt die Plattform bereit (z.B. Loadbalancer, GatewayClass). Verwaltet mehrere Cluster.          |
+| **Caroline** | Cluster-Operatorin | Betreibt einen einzelnen Cluster. Definiert Entry Points (Gateways), TLS, Policies.                |
 | **Christian** | Anwendungsentwickler | Baut Geschäftsanwendungen. Will seine Endpunkte exponieren, ohne sich um Infrastruktur zu kümmern. |
 
 ---
 ### Ressourcen
 
-```
-Isabell          Caroline               Christian
-   |                 |                      |
-GatewayClass --> Gateway (Listener) --> HTTPRoute --> Service
-                                    --> GRPCRoute
-                                    --> TLSRoute
-                                    --> TCPRoute
-```
+<img src="resource-model.png" width="500">
 
 ### Drei Schichten
 * **GatewayClass** (Cluster-scoped): Definiert den Gateway-Controller (z.B. Envoy, Nginx, Traefik, Istio, ...)
