@@ -165,8 +165,13 @@ kubectl -n infra get Certificate
 
 ---
 
+### Stuff for later
+der folgende krams ist ai generiert und nicht reviewd. vorsicht!
 
-## Teil 5: Demo Schritt 3 -- Non-HTTP Traffic (~4 Minuten)
+---
+
+
+## Demo 3 -- Non-HTTP Traffic
 
 ### Folie 18: Warum Non-HTTP?
 
