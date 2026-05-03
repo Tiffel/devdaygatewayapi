@@ -155,7 +155,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: shared-gateway
-  namespace: infra
+  namespace: gateway
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
@@ -207,7 +207,7 @@ metadata:
 spec:
   parentRefs:
   - name: shared-gateway
-    namespace: infra
+    namespace: gateway
     sectionName: https
   hostnames:
   - app.example.com
@@ -232,7 +232,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: https-redirect
-  namespace: infra
+  namespace: gateway
 spec:
   parentRefs:
   - name: shared-gateway
@@ -307,7 +307,7 @@ metadata:
 spec:
   parentRefs:
   - name: shared-gateway
-    namespace: infra
+    namespace: gateway
     sectionName: mqtt-tls
   hostnames:
   - mqtt.example.com
@@ -336,7 +336,7 @@ metadata:
 spec:
   parentRefs:
   - name: shared-gateway
-    namespace: infra
+    namespace: gateway
     sectionName: db-tcp
   rules:
   - backendRefs:

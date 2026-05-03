@@ -55,7 +55,7 @@ GatewayClass --> Gateway (Listener) --> HTTPRoute --> Service
 ```
 
 ### Schlüsselkonzepte
-- Routes *attachen* sich an Gateways
+- Routes attachen sich an Gateways
 - Mehrere Routes können sich einen Gateway teilen (Multi-Tenancy)
 - Ein Route kann an mehrere Gateways attachen
 
@@ -76,7 +76,7 @@ GatewayClass --> Gateway (Listener) --> HTTPRoute --> Service
 ## Demo
 ### HTTP Service exponieren
 
----
+----
 ## Demo
 ### HTTP Service exponieren
 #### workload
@@ -92,9 +92,10 @@ http localhost:5678
 kubectl get gatewayclass
 kubectl describe gatewayclass cilium
 
-kubectl -n infra get gateway
-kubectl -n infra get services 
+kubectl -n gateway get gateway
+kubectl -n gateway get services 
 ```
+listeners must be distinct!
 
 #### Route
 
@@ -112,17 +113,21 @@ watch -n 1 http pets.devday.cscheer.eu/any
 ## Demo
 ### TLS mit cert-manager
 
----
+----
 
-
+TODO slides
 #### workload
 
 ```
-kubectl -n infra get Certificate
+kubectl -n gateway get Certificate
 ```
 
 ---
 
+---
+
+## Ausblick
+Gateway Listeners
 
 
 
@@ -154,7 +159,7 @@ meistens will man nur eins.
 ## Demo Schritt 2 -- TLS mit cert-manager
 
 ```
-kubectl -n infra get Certificate
+kubectl -n gateway get Certificate
 ```
 
 **Erklärung:**
@@ -215,7 +220,7 @@ metadata:
 spec:
   parentRefs:
   - name: shared-gateway
-    namespace: infra
+    namespace: gateway
     sectionName: mqtt-tls
   hostnames:
   - mqtt.example.com
@@ -244,7 +249,7 @@ metadata:
 spec:
   parentRefs:
   - name: shared-gateway
-    namespace: infra
+    namespace: gateway
     sectionName: db-tcp
   rules:
   - backendRefs:

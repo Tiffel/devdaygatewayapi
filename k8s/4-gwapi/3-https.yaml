@@ -1,14 +1,19 @@
 ---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: gateway
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: http-gateway
-  namespace: infra
+  namespace: gateway
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
 spec:
   gatewayClassName: cilium
-  listeners:
+  listeners:            #must be distinct
     - name: http
       allowedRoutes:
         namespaces:
@@ -21,7 +26,7 @@ spec:
           from: All
       port: 443
       protocol: HTTPS
-      hostname: pets.devday.cscheer.eu #required by cert-manager
+      hostname: pets.devday.cscheer.eu   #required by cert-manager
       tls:
         mode: Terminate
         certificateRefs:

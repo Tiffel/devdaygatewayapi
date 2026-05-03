@@ -10,10 +10,11 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-key
     solvers:
+      #- dns01
       - http01:
           gatewayHTTPRoute:
             parentRefs:
-              - kind: Gateway
+              - kind: Gateway             #explain why later
                 name: http-gateway
-                namespace: infra
-            serviceType: ClusterIP
+                namespace: gateway
+            serviceType: ClusterIP        #weird cilium behavior. in general, this is not necessary
