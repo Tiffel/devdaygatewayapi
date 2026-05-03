@@ -1,3 +1,6 @@
 :root {
     --r-heading-margin: 60px 0px 20px 0px;
 }
+.reveal pre code {
+    background-color: #363428;
+}
