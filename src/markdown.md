@@ -123,13 +123,14 @@ kubectl -n gateway get Certificate
 ---
 
 ## ListenerSet
+neu in v1.5
 
 https://gateway-api.sigs.k8s.io/guides/listener-set/
 
 ---
 
 ## Ausblick
-* TlSRoute
+* TLSRoute
 * TCP/UDP Route
 * GAMMA Initiative (Gateway API for Service Mesh)
 
