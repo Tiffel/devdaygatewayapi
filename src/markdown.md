@@ -119,6 +119,7 @@ watch -n 1 http pets.devday.cscheer.eu/any
 ```
 kubectl -n gateway get Certificate
 ```
+
 ---
 
 ## ListenerSet
@@ -128,10 +129,11 @@ https://gateway-api.sigs.k8s.io/guides/listener-set/
 ---
 
 ## Ausblick
-TlSRoute
-Tcp/Udp Route
-GAMMA Initiative (Gateway API for Service Mesh)¶
+* TlSRoute
+* TCP/UDP Route
+* GAMMA Initiative (Gateway API for Service Mesh)
 
+---
 
 ## Links
 - Gateway API Dokumentation: https://gateway-api.sigs.k8s.io/
@@ -139,7 +141,9 @@ GAMMA Initiative (Gateway API for Service Mesh)¶
 - cert-manager Gateway API Support: https://cert-manager.io/docs/usage/gateway/
 - cilium Gateway API Support: https://docs.cilium.io/en/stable/network/servicemesh/gateway-api/gateway-api/
 
+---
 
-## this
+## Danke
 https://github.com/Tiffel/devdaygatewayapi
+
 <img src="qrcode.png" width="500">
